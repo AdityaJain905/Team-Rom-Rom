@@ -1,0 +1,80 @@
+//During code review, we noticed that the FSM was written using older Verilog constructs such as reg and always @(...). The design also lacked assertion checks to detect invalid states or incorrect outputs. Although the code simulated, it did not follow modern SystemVerilog best practices and had no built-in safety verification.
+problem 2                                                                                                                                                  `timescale 1ns/1ps
+
+module TicketVendorBot (
+    input  logic Clock,
+    input  logic Clear,
+    input  logic Ten,
+    input  logic Twenty,
+
+    output logic Ready,
+    output logic Dispense,
+    output logic Return,
+    output logic Bill
+);
+
+  import definitions::*;
+
+  state_t State, NextState;
+
+  // =============================
+  // State Register
+  // =============================
+  always_ff @(posedge Clock or posedge Clear) begin
+    if (Clear)
+      State <= RDY;
+    else
+      State <= NextState;
+  end
+
+  // =============================
+  // Next State Logic
+  // =============================
+  always_comb begin
+    NextState = State;
+
+    case (State)
+
+      RDY:
+        if (Ten)         NextState = BILL10;
+        else if (Twenty) NextState = BILL20;
+
+      BILL10:
+        if (Ten)         NextState = BILL20;
+        else if (Twenty) NextState = BILL30;
+
+      BILL20:
+        if (Ten)         NextState = BILL30;
+        else if (Twenty) NextState = DISP;
+
+      BILL30:
+        if (Ten)         NextState = DISP;
+        else if (Twenty) NextState = RTN;
+
+      DISP,
+      RTN:
+        NextState = RDY;
+
+    endcase
+  end
+
+  // =============================
+  // Output Logic (Moore)
+  // =============================
+  always_comb begin
+    Ready    = 0;
+    Dispense = 0;
+    Return   = 0;
+    Bill     = 0;
+
+    case (State)
+      RDY:    Ready    = 1;
+      DISP:   Dispense = 1;
+      RTN:    Return   = 1;
+      BILL10,
+      BILL20,
+      BILL30: Bill = 1;
+    endcase
+  end
+
+endmodule
