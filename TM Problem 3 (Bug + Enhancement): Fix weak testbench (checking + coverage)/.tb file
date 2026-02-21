@@ -1,0 +1,86 @@
+//While running simulations, we observed that the testbench only applied input sequences and displayed outputs but did not verify whether the outputs were correct. There were no checks, assertions, or coverage mechanisms. This meant that even if the FSM behaved incorrectly, the testbench would not detect the error, indicating a weak verification environment.
+problem 3                                                                                                                                                `timescale 1ns/1ps
+
+module TestBench;
+
+  import definitions::*;
+
+  logic Clock;
+  logic Clear;
+  logic Ten;
+  logic Twenty;
+
+  logic Ready;
+  logic Dispense;
+  logic Return;
+  logic Bill;
+
+  TicketVendorBot DUT (
+    .Clock(Clock),
+    .Clear(Clear),
+    .Ten(Ten),
+    .Twenty(Twenty),
+    .Ready(Ready),
+    .Dispense(Dispense),
+    .Return(Return),
+    .Bill(Bill)
+  );
+
+  // =============================
+  // Clock Generation
+  // =============================
+  initial Clock = 0;
+  always #10 Clock = ~Clock;   // 20ns period
+
+  // =============================
+  // Stimulus
+  // =============================
+  initial begin
+
+    // Initialize
+    Clear   = 1;
+    Ten     = 0;
+    Twenty  = 0;
+
+    #40;
+    Clear = 0;
+
+    // Case 1: 10+10+10+10
+    send10(); send10(); send10(); send10();
+
+    // Case 2: 20+20
+    send20(); send20();
+
+    // Case 3: 10+10+20
+    send10(); send10(); send20();
+
+    // Case 4: overshoot
+    send10(); send20(); send20();
+
+    #200;
+
+    $finish;
+  end
+
+  // =============================
+  // Tasks
+  // =============================
+  task send10();
+    begin
+      @(negedge Clock);
+      Ten = 1; Twenty = 0;
+      @(negedge Clock);
+      Ten = 0;
+    end
+  endtask
+
+  task send20();
+    begin
+      @(negedge Clock);
+      Ten = 0; Twenty = 1;
+      @(negedge Clock);
+      Twenty = 0;
+    end
+  endtask
+
+endmodule
