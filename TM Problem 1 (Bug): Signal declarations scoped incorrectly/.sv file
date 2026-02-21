@@ -1,0 +1,21 @@
+//While compiling and simulating the Ticket Machine FSM with the testbench, the simulator generated errors such as:
+
+Undefined identifier State
+
+Incorrect state display
+
+State not accessible in testbench
+
+This occurred because State and NextState were declared inside the package instead of inside the module.
+problem 1:                                                                                                          package definitions;
+
+  typedef enum logic [2:0] {
+    RDY,
+    BILL10,
+    BILL20,
+    BILL30,
+    DISP,
+    RTN
+  } state_t;
+
+endpackage
